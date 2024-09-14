@@ -150,9 +150,13 @@ vim.opt.inccommand = 'split'
 
 -- Show which line your cursor is on
 vim.opt.cursorline = true
+vim.opt.wrap = false
 
 -- Minimal number of screen lines to keep above and below the cursor.
-vim.opt.scrolloff = 10
+-- vim.opt.scrolloff = 10
+vim.opt.tabstop = 4
+-- vim.opt.shiftwidth = 4
+-- vim.opt.expandtab = true
 
 -- [[ Basic Keymaps ]]
 --  See `:help vim.keymap.set()`
@@ -564,7 +568,9 @@ require('lazy').setup({
       --  - settings (table): Override the default settings passed when initializing the server.
       --        For example, to see the options for `lua_ls`, you could go to: https://luals.github.io/wiki/settings/
       local servers = {
-        -- clangd = {},
+        -- clangd = {
+        --   cmd = { '/usr/bin/clangd' },
+        -- },
         -- gopls = {},
         -- pyright = {},
         -- rust_analyzer = {},
@@ -604,6 +610,30 @@ require('lazy').setup({
         zls = {
           cmd = { '/home/ak/.local/bin/zls' },
         },
+        ols = {
+          cmd = { '/home/ak/.tools/ols/ols' },
+          init_options = {
+            ['$schema'] = 'https://raw.githubusercontent.com/DanielGavin/ols/master/misc/ols.schema.json',
+            enable_inlay_hints = true,
+            enable_document_symbols = true,
+            enable_hover = true,
+            enable_rename = true,
+            enable_procedure_snippet = true,
+            enable_references = true,
+            enable_fake_methods = true,
+            enable_snippets = true,
+          },
+        },
+      }
+
+      require('lspconfig.configs').elvishls = {
+        default_config = {
+          cmd = { 'elvish', '-lsp' },
+          filetypes = { 'elvish', 'elv' },
+          root_dir = require('lspconfig.util').root_pattern '.git',
+          settings = {},
+          single_file_support = true,
+        },
       }
 
       -- Ensure the servers and tools above are installed
@@ -639,9 +669,21 @@ require('lazy').setup({
       server_rust.capabilities = vim.tbl_deep_extend('force', {}, capabilities, server_rust.capabilities or {})
       require('lspconfig')['rust_analyzer'].setup(server_rust)
 
-      local server_zig = servers['zls'] or {}
-      server_zig.capabilities = vim.tbl_deep_extend('force', {}, capabilities, server_zig.capabilities or {})
-      require('lspconfig')['zls'].setup(server_zig)
+      local server_zls = servers['zls'] or {}
+      server_zls.capabilities = vim.tbl_deep_extend('force', {}, capabilities, server_zls.capabilities or {})
+      require('lspconfig')['zls'].setup(server_zls)
+
+      local server_ols = servers['ols'] or {}
+      server_ols.capabilities = vim.tbl_deep_extend('force', {}, capabilities, server_ols.capabilities or {})
+      require('lspconfig')['ols'].setup(server_ols)
+
+      local server_clangd = servers['clangd'] or {}
+      server_clangd.capabilities = vim.tbl_deep_extend('force', {}, capabilities, server_clangd.capabilities or {})
+      require('lspconfig')['clangd'].setup(server_clangd)
+
+      local server_elvishls = servers['elvishls'] or {}
+      server_elvishls.capabilities = vim.tbl_deep_extend('force', {}, capabilities, server_elvishls.capabilities or {})
+      require('lspconfig')['elvishls'].setup(server_elvishls)
     end,
   },
 
@@ -702,12 +744,12 @@ require('lazy').setup({
           -- `friendly-snippets` contains a variety of premade snippets.
           --    See the README about individual language/framework/plugin snippets:
           --    https://github.com/rafamadriz/friendly-snippets
-          -- {
-          --   'rafamadriz/friendly-snippets',
-          --   config = function()
-          --     require('luasnip.loaders.from_vscode').lazy_load()
-          --   end,
-          -- },
+          {
+            'rafamadriz/friendly-snippets',
+            config = function()
+              require('luasnip.loaders.from_vscode').lazy_load()
+            end,
+          },
         },
       },
       'saadparwaiz1/cmp_luasnip',
@@ -760,7 +802,7 @@ require('lazy').setup({
           -- Manually trigger a completion from nvim-cmp.
           --  Generally you don't need this, because nvim-cmp will display
           --  completions whenever it has completion options available.
-          ['<C-Space>'] = cmp.mapping.complete {},
+          ['<C-t>'] = cmp.mapping.complete {},
 
           -- Think of <c-l> as moving to the right of your snippet expansion.
           --  So if you have a snippet that's like:
@@ -930,6 +972,11 @@ require('lazy').setup({
       start = '🚀',
       task = '📌',
       lazy = '💤 ',
+    },
+  },
+  performance = {
+    rtp = {
+      paths = { '/usr/share/vim/vimfiles' },
     },
   },
 })
