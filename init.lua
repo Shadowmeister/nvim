@@ -158,7 +158,7 @@ vim.opt.wrap = false
 -- Minimal number of screen lines to keep above and below the cursor.
 -- vim.opt.scrolloff = 10
 vim.opt.tabstop = 4
--- vim.opt.shiftwidth = 4
+vim.opt.shiftwidth = 4
 -- vim.opt.expandtab = true
 
 -- [[ Basic Keymaps ]]
@@ -358,7 +358,7 @@ require('lazy').setup({
       { 'nvim-telescope/telescope-ui-select.nvim' },
 
       -- Useful for getting pretty icons, but requires a Nerd Font.
-      { 'nvim-tree/nvim-web-devicons', enabled = vim.g.have_nerd_font },
+      { 'echasnovski/mini.icons', enabled = vim.g.have_nerd_font },
     },
     config = function()
       -- Telescope is a fuzzy finder that comes with a lot of different things that
@@ -547,6 +547,9 @@ require('lazy').setup({
           -- or a suggestion from your LSP for this to activate.
           map('<leader>ca', vim.lsp.buf.code_action, '[C]ode [A]ction', { 'n', 'x' })
 
+          -- Show the signature help of the current function
+          map('<C-h>', vim.lsp.buf.signature_help, 'Signature Help', { 'i', 'n' })
+
           -- WARN: This is not Goto Definition, this is Goto Declaration.
           --  For example, in C this would take you to the header.
           map('gD', vim.lsp.buf.declaration, '[G]oto [D]eclaration')
@@ -651,6 +654,7 @@ require('lazy').setup({
         zls = {
           cmd = { '/home/ak/.local/bin/zls' },
         },
+        gleam = {},
         ols = {
           cmd = { '/home/ak/.tools/ols/ols' },
           init_options = {
@@ -725,6 +729,10 @@ require('lazy').setup({
       local server_elvishls = servers['elvishls'] or {}
       server_elvishls.capabilities = vim.tbl_deep_extend('force', {}, capabilities, server_elvishls.capabilities or {})
       require('lspconfig')['elvishls'].setup(server_elvishls)
+
+      local server_gleam = servers['gleam'] or {}
+      server_gleam.capabilities = vim.tbl_deep_extend('force', {}, capabilities, server_gleam.capabilities or {})
+      require('lspconfig')['gleam'].setup(server_gleam)
     end,
   },
 
@@ -968,6 +976,9 @@ require('lazy').setup({
         additional_vim_regex_highlighting = { 'ruby' },
       },
       indent = { enable = true, disable = { 'ruby' } },
+      incremental_selection = {
+        enable = true,
+      },
     },
     -- There are additional nvim-treesitter modules that you can use to interact
     -- with nvim-treesitter. You should go explore a few and see what interests you:
