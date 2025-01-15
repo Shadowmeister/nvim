@@ -468,7 +468,6 @@ require('lazy').setup({
       'WhoIsSethDaniel/mason-tool-installer.nvim',
 
       -- Useful status updates for LSP.
-      -- NOTE: `opts = {}` is the same as calling `require('fidget').setup({})`
       { 'j-hui/fidget.nvim', opts = { progress = { lsp = { progress_ringbuf_size = 2048 } } } },
 
       -- Allows extra capabilities provided by nvim-cmp
