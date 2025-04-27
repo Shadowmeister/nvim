@@ -204,7 +204,7 @@ vim.api.nvim_create_autocmd('TextYankPost', {
   desc = 'Highlight when yanking (copying) text',
   group = vim.api.nvim_create_augroup('kickstart-highlight-yank', { clear = true }),
   callback = function()
-    vim.highlight.on_yank()
+    vim.hl.on_yank()
   end,
 })
 
@@ -538,6 +538,7 @@ require('lazy').setup({
           -- Fuzzy find all the symbols in your current workspace.
           --  Similar to document symbols, except searches over your entire project.
           map('<leader>ws', require('telescope.builtin').lsp_dynamic_workspace_symbols, '[W]orkspace [S]ymbols')
+          map('<leader>e', vim.diagnostic.open_float, 'Float Diagnostics')
 
           -- Rename the variable under your cursor.
           --  Most Language Servers support renaming across files, etc.
@@ -560,7 +561,7 @@ require('lazy').setup({
           --
           -- When you move your cursor, the highlights will be cleared (the second autocommand).
           local client = vim.lsp.get_client_by_id(event.data.client_id)
-          if client and client.supports_method(vim.lsp.protocol.Methods.textDocument_documentHighlight) then
+          if client and client:supports_method(vim.lsp.protocol.Methods.textDocument_documentHighlight) then
             local highlight_augroup = vim.api.nvim_create_augroup('kickstart-lsp-highlight', { clear = false })
             vim.api.nvim_create_autocmd({ 'CursorHold', 'CursorHoldI' }, {
               buffer = event.buf,
@@ -587,7 +588,7 @@ require('lazy').setup({
           -- code, if the language server you are using supports them
           --
           -- This may be unwanted, since they displace some of your code
-          if client and client.supports_method(vim.lsp.protocol.Methods.textDocument_inlayHint) then
+          if client and client:supports_method(vim.lsp.protocol.Methods.textDocument_inlayHint) then
             map('<leader>th', function()
               vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled { bufnr = event.buf })
             end, '[T]oggle Inlay [H]ints')
@@ -642,12 +643,19 @@ require('lazy').setup({
           },
         },
         rust_analyzer = {
-          cmd = { '/home/ak/.cargo/bin/rust-analyzer' },
           settings = {
             ['rust-analyzer'] = {
               check = {
                 command = 'clippy',
               },
+            },
+          },
+        },
+        nim_langserver = {
+          cmd = { '/home/ak/.tools/nimlangserver/nimlangserver' },
+          settings = {
+            nim = {
+              nimsuggestPath = '/home/ak/.nimble/bin/nimsuggest',
             },
           },
         },
@@ -708,11 +716,17 @@ require('lazy').setup({
             require('lspconfig')[server_name].setup(server)
           end,
         },
+        automatic_installation = false,
+        ensure_installed = {},
       }
 
       local server_rust = servers['rust_analyzer'] or {}
       server_rust.capabilities = vim.tbl_deep_extend('force', {}, capabilities, server_rust.capabilities or {})
       require('lspconfig')['rust_analyzer'].setup(server_rust)
+
+      local server_nimlangserver = servers['nim_langserver'] or {}
+      server_nimlangserver.capabilites = vim.tbl_deep_extend('force', {}, capabilities, server_nimlangserver.capabilites or {})
+      require('lspconfig')['nim_langserver'].setup(server_nimlangserver)
 
       local server_zls = servers['zls'] or {}
       server_zls.capabilities = vim.tbl_deep_extend('force', {}, capabilities, server_zls.capabilities or {})
@@ -770,6 +784,7 @@ require('lazy').setup({
       end,
       formatters_by_ft = {
         lua = { 'stylua' },
+        nim = { 'nph' },
         -- Conform can also run multiple formatters sequentially
         -- python = { "isort", "black" },
         --
