@@ -1,7 +1,6 @@
 return {
-  cmd = { '/home/ak/.tools/ols/ols' },
   init_options = {
-    ['$schema'] = 'https://raw.githubusercontent.com/DanielGavin/ols/master/misc/ols.schema.json',
+    -- ['$schema'] = 'https://raw.githubusercontent.com/DanielGavin/ols/master/misc/ols.schema.json',
     enable_inlay_hints = true,
     enable_document_symbols = true,
     enable_hover = true,

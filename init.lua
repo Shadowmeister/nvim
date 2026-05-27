@@ -163,6 +163,8 @@ vim.o.expandtab = true
 -- See `:help 'confirm'`
 vim.o.confirm = true
 
+require('vim._core.ui2').enable {}
+
 -- [[ Basic Keymaps ]]
 --  See `:help vim.keymap.set()`
 
@@ -262,15 +264,8 @@ rtp:prepend(lazypath)
 --
 -- NOTE: Here is where you install your plugins.
 require('lazy').setup({
-  -- NOTE: Plugins can be added with a link (or for a github repo: 'owner/repo' link).
+  -- NOTE: Plugins can be added with a link or github org/name. To run setup automatically, use `opts = {}`
   { 'NMAC427/guess-indent.nvim', opts = {} }, -- Detect tabstop and shiftwidth automatically
-
-  -- NOTE: Plugins can also be added by using a table,
-  -- with the first argument being the link and the following
-  -- keys can be used to configure plugin behavior/loading/etc.
-  --
-  -- Use `opts = {}` to automatically pass options to a plugin's `setup()` function, forcing the plugin to be loaded.
-  --
 
   -- Alternatively, use `config = function() ... end` for full control over the configuration.
   -- If you prefer to call `setup` explicitly, use:
@@ -289,13 +284,16 @@ require('lazy').setup({
   -- See `:help gitsigns` to understand what the configuration keys do
   { -- Adds git related signs to the gutter, as well as utilities for managing changes
     'lewis6991/gitsigns.nvim',
+    ---@module 'gitsigns'
+    ---@type Gitsigns.Config
+    ---@diagnostic disable-next-line: missing-fields
     opts = {
       signs = {
-        add = { text = '+' },
-        change = { text = '~' },
-        delete = { text = '_' },
-        topdelete = { text = '‾' },
-        changedelete = { text = '~' },
+        add = { text = '+' }, ---@diagnostic disable-line: missing-fields
+        change = { text = '~' }, ---@diagnostic disable-line: missing-fields
+        delete = { text = '_' }, ---@diagnostic disable-line: missing-fields
+        topdelete = { text = '‾' }, ---@diagnostic disable-line: missing-fields
+        changedelete = { text = '~' }, ---@diagnostic disable-line: missing-fields
       },
     },
   },
@@ -504,7 +502,7 @@ require('lazy').setup({
       { 'j-hui/fidget.nvim', opts = { progress = { lsp = { progress_ringbuf_size = 2048 } } } },
 
       -- Allows extra capabilities provided by blink.cmp
-      'saghen/blink.cmp',
+      -- 'saghen/blink.cmp',
     },
     config = function()
       -- Brief aside: **What is LSP?**
@@ -620,6 +618,8 @@ require('lazy').setup({
         stylua = {}, -- Used to format Lua code
         lua_ls = {
           on_init = function(client)
+            client.server_capabilities.documentFormattingProvider = false -- Disable formatting (formatting is done by stylua)
+
             if client.workspace_folders then
               local path = client.workspace_folders[1].name
               if path ~= vim.fn.stdpath 'config' and (vim.uv.fs_stat(path .. '/.luarc.json') or vim.uv.fs_stat(path .. '/.luarc.jsonc')) then return end
@@ -641,11 +641,10 @@ require('lazy').setup({
               },
             })
           end,
+          ---@type lspconfig.settings.lua_ls
           settings = {
             Lua = {
-              completion = {
-                callSnippet = 'Replace',
-              },
+              format = { enable = false }, -- Disable formatting (formatting is done by stylua)
             },
           },
         },
@@ -661,6 +660,10 @@ require('lazy').setup({
         ols = {},
         zls = {},
         zenc = {},
+        qmlls = {
+          cmd = { 'qmlls6' },
+        },
+        c3lsp = {},
       }
 
       -- Ensure the servers and tools above are installed
@@ -696,7 +699,7 @@ require('lazy').setup({
     keys = {
       {
         '<leader>f',
-        function() require('conform').format { async = true, lsp_format = 'fallback' } end,
+        function() require('conform').format { async = true } end,
         mode = '',
         desc = '[F]ormat buffer',
       },
@@ -704,20 +707,24 @@ require('lazy').setup({
     opts = {
       notify_on_error = false,
       format_on_save = function(bufnr)
-        -- Disable "format_on_save lsp_fallback" for languages that don't
-        -- have a well standardized coding style. You can add additional
-        -- languages here or re-enable it for the disabled ones.
-        local disable_filetypes = { c = true, cpp = true }
-        if disable_filetypes[vim.bo[bufnr].filetype] then
-          return nil
+        -- You can specify filetype to autoformat on save here:
+        local enabled_filetypes = {
+          lua = true,
+          zig = true,
+          odin = true,
+        }
+        if enabled_filetypes[vim.bo[bufnr].filetype] then
+          return { timeout_ms = 500 }
         else
-          return {
-            timeout_ms = 500,
-            lsp_format = 'fallback',
-          }
+          return nil
         end
       end,
+      default_format_opts = {
+        lsp_format = 'fallback', -- Use external formatters if configured below, otherwise use LSP formatting. Set to `false` to disable LSP formatting entirely.
+      },
+      -- You can also specify external formatters in here.
       formatters_by_ft = {
+        -- rust = { 'rustfmt' },
         lua = { 'stylua' },
         nim = { 'nph' },
         -- Conform can also run multiple formatters sequentially
@@ -825,17 +832,19 @@ require('lazy').setup({
     -- change the command in the config to whatever the name of that colorscheme is.
     --
     -- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`.
-    'catppuccin/nvim',
-    name = 'catppuccin',
+    'rose-pine/neovim',
+    name = 'rose-pine',
     priority = 1000, -- Make sure to load this before all the other start plugins.
     config = function()
       ---@diagnostic disable-next-line: missing-fields
-      require('catppuccin').setup {}
+      require('rose-pine').setup {
+        variant = 'moon',
+      }
 
       -- Load the colorscheme here.
       -- Like many other themes, this one has different styles, and you could load
       -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
-      vim.cmd.colorscheme 'catppuccin-macchiato'
+      vim.cmd.colorscheme 'rose-pine'
     end,
   },
 
@@ -857,9 +866,16 @@ require('lazy').setup({
       --
       -- Examples:
       --  - va)  - [V]isually select [A]round [)]paren
-      --  - yinq - [Y]ank [I]nside [N]ext [Q]uote
+      --  - yiiq - [Y]ank [I]nside [I]ext [Q]uote
       --  - ci'  - [C]hange [I]nside [']quote
-      require('mini.ai').setup { n_lines = 500 }
+      require('mini.ai').setup {
+        -- NOTE: Avoid conflicts with the built-in incremental selection mappings on Neovim>=0.12
+        mappings = {
+          around_next = 'aa',
+          inside_next = 'ii',
+        },
+        n_lines = 500,
+      }
 
       -- Add/delete/replace surroundings (brackets, quotes, etc.)
       --
@@ -892,51 +908,64 @@ require('lazy').setup({
     branch = 'main',
     -- [[ Configure Treesitter ]] See `:help nvim-treesitter-intro`
     config = function()
-      vim.api.nvim_create_autocmd('User', {
-        pattern = 'TSUpdate',
-        callback = function()
-          require('nvim-treesitter.parsers').zenc = {
-            install_info = {
-              path = '~/Dev/Zen/tree-sitter-zenc',
-              generate = false,
-              queries = 'queries',
-            },
-          }
-        end,
-      })
-      vim.treesitter.language.register('zenc', { 'zenc' })
-
-      local parsers = { 'bash', 'c', 'cpp', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc', 'zenc', 'zig', 'odin' }
+      local parsers =
+        { 'bash', 'c', 'cpp', 'c3', 'diff', 'html', 'lua', 'luadoc', 'qmljs', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc', 'zig', 'odin' }
       require('nvim-treesitter').install(parsers)
 
+      ---@param buf integer
+      ---@param language string
+      local function treesitter_try_attach(buf, language)
+        -- check if parser exists and load it
+        if not vim.treesitter.language.add(language) then return end
+        -- enables syntax highlighting and other treesitter features
+        vim.treesitter.start(buf, language)
+
+        -- enables treesitter based folds
+        -- for more info on folds see `:help folds`
+        -- vim.wo.foldexpr = 'v:lua.vim.treesitter.foldexpr()'
+        -- vim.wo.foldmethod = 'expr'
+
+        -- check if treesitter indentation is available for this language, and if so enable it
+        -- in case there is no indent query, the indentexpr will fallback to the vim's built in one
+        local has_indent_query = vim.treesitter.query.get(language, 'indents') ~= nil
+
+        -- enables treesitter based indentation
+        if has_indent_query then vim.bo.indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()" end
+      end
+
+      -- require('nvim-treesitter.parsers').zenc = {
+      --   install_info = {
+      --     path = '~/Dev/Zen/tree-sitter-zenc',
+      --     generate = true,
+      --     queries = 'queries',
+      --   },
+      -- }
+      -- vim.treesitter.language.register('zenc', { 'zenc' })
+
+      local available_parsers = require('nvim-treesitter').get_available()
       vim.api.nvim_create_autocmd('FileType', {
         callback = function(args)
           local buf, filetype = args.buf, args.match
+          if filetype == 'qmljs' then filetype = 'qml' end
 
           local language = vim.treesitter.language.get_lang(filetype)
           if not language then return end
 
-          -- check if parser exists and load it
-          if not vim.treesitter.language.add(language) then return end
-          -- enables syntax highlighting and other treesitter features
-          vim.treesitter.start(buf, language)
+          local installed_parsers = require('nvim-treesitter').get_installed 'parsers'
 
-          -- enables treesitter based folds
-          -- for more info on folds see `:help folds`
-          -- vim.wo.foldexpr = 'v:lua.vim.treesitter.foldexpr()'
-          -- vim.wo.foldmethod = 'expr'
-
-          -- enabled treesitter based indentation
-          vim.bo.indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
+          if vim.tbl_contains(installed_parsers, language) then
+            -- enable the parser if it is installed
+            treesitter_try_attach(buf, language)
+          elseif vim.tbl_contains(available_parsers, language) then
+            -- if a parser is available in `nvim-treesitter` auto install it, and enable it after the installation is done
+            require('nvim-treesitter').install(language):await(function() treesitter_try_attach(buf, language) end)
+          else
+            -- try to enable treesitter features in case the parser exists but is not available from `nvim-treesitter`
+            treesitter_try_attach(buf, language)
+          end
         end,
       })
     end,
-    -- There are additional nvim-treesitter modules that you can use to interact
-    -- with nvim-treesitter. You should go explore a few and see what interests you:
-    --
-    --    - Incremental selection: Included, see `:help nvim-treesitter-incremental-selection-mod`
-    --    - Show your current context: https://github.com/nvim-treesitter/nvim-treesitter-context
-    --    - Treesitter + textobjects: https://github.com/nvim-treesitter/nvim-treesitter-textobjects
   },
 
   -- The following comments only work if you have downloaded the kickstart repo, not just copy pasted the
